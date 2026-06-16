@@ -1,0 +1,19 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      MOCK_AWS: "true"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      AWS_REGION: "${AWS_REGION:-us-east-1}"
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    environment:
+      # The Vite dev server proxies /api to this target (the backend service).
+      VITE_BACKEND_URL: "http://backend:8000"
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
