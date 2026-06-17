@@ -1,16 +1,3 @@
-"""LLM validation layer.
-
-Reviews each aggregated finding for feasibility (can this safely be done?) and
-risk (what could break?), returning a structured verdict. Uses the Anthropic SDK
-directly so the call is transparent.
-
-When no ANTHROPIC_API_KEY is configured, a deterministic heuristic stands in so
-the app still runs end-to-end with zero setup.
-
-Robustness (per PRD): unparseable model output falls back to `needs_review` with
-the raw output retained; API/transport errors are caught, recorded in
-`state["errors"]`, and that finding is marked `needs_review`.
-"""
 from __future__ import annotations
 
 import json
@@ -63,8 +50,6 @@ def format_user_message(finding: dict) -> str:
     )
 
 
-# --- Claude client (lazy singleton) ----------------------------------------
-
 _client = None
 
 
@@ -100,9 +85,6 @@ def _validate_one(finding: dict) -> tuple[ValidationVerdict, str]:
             raw,
         )
     return verdict, raw
-
-
-# --- Heuristic fallback (no API key) ---------------------------------------
 
 
 def _heuristic(finding: dict) -> ValidationVerdict:
@@ -167,11 +149,7 @@ def _heuristic(finding: dict) -> ValidationVerdict:
     )
 
 
-# --- Graph node ------------------------------------------------------------
-
-
 def validate_node(state) -> dict:
-    """Review each aggregated finding for feasibility and risk."""
     findings = state.get("aggregated_findings", [])
     if not findings:
         # Empty findings list: skip the validator entirely (no API call).

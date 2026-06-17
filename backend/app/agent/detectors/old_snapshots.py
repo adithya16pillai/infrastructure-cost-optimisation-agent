@@ -1,8 +1,3 @@
-"""Detector: EBS snapshots older than the age threshold.
-
-Rule: snapshot `start_time` older than 180 days, regardless of source-volume
-status (snapshots persist after volume deletion, which is why they pile up).
-"""
 from __future__ import annotations
 
 import logging

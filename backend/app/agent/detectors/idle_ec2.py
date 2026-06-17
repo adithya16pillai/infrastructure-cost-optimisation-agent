@@ -1,8 +1,3 @@
-"""Detector: running EC2 instances with sustained low CPU utilisation.
-
-Rule: instance is `running` and its average daily CPU over the last 14 days is
-below 5%.
-"""
 from __future__ import annotations
 
 import logging

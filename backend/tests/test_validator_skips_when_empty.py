@@ -1,4 +1,3 @@
-"""Validator: an empty findings list makes no API call (mocked LLM)."""
 from __future__ import annotations
 
 from app.agent import validator

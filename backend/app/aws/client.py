@@ -1,10 +1,3 @@
-"""AWS data access layer.
-
-`AwsClient` is the only interface the agent depends on. Two implementations back
-it: `RealAwsClient` (boto3) and `MockAwsClient` (deterministic fixtures). Use
-`get_aws_client(settings)` to obtain the right one. Detectors must never import
-boto3 directly.
-"""
 from __future__ import annotations
 
 import logging
@@ -12,9 +5,6 @@ from datetime import datetime, timedelta, timezone
 from typing import Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
-
-# --- Price tables (MVP: hardcoded; real pricing via the Price List API is out
-# of scope). ----------------------------------------------------------------
 
 EC2_HOURLY_PRICE: dict[str, dict[str, float]] = {
     "us-east-1": {
@@ -38,10 +28,7 @@ SNAPSHOT_GB_MONTH_PRICE = 0.05
 
 
 class AwsClientError(Exception):
-    """Raised when an underlying AWS call fails."""
-
-
-# --- Protocol --------------------------------------------------------------
+    pass
 
 
 @runtime_checkable
@@ -53,9 +40,6 @@ class AwsClient(Protocol):
     def list_ebs_volumes(self) -> list[dict]: ...
     def list_ebs_snapshots(self) -> list[dict]: ...
     def get_instance_hourly_cost(self, instance_type: str, region: str) -> float: ...
-
-
-# --- Shared pricing behaviour ----------------------------------------------
 
 
 class _PriceTableMixin:
@@ -70,13 +54,9 @@ class _PriceTableMixin:
 
 
 def _iso(dt: datetime) -> str:
-    """Format a datetime as ISO-8601 UTC with a trailing 'Z'."""
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-# --- Real implementation ---------------------------------------------------
 
 
 class RealAwsClient(_PriceTableMixin):
@@ -195,9 +175,6 @@ class RealAwsClient(_PriceTableMixin):
         return snapshots
 
 
-# --- Mock implementation ---------------------------------------------------
-
-
 class MockAwsClient(_PriceTableMixin):
     def __init__(self, region: str = "us-east-1") -> None:
         self.region = region
@@ -223,13 +200,9 @@ class MockAwsClient(_PriceTableMixin):
         return mock_data.ebs_snapshots()
 
 
-# --- Factory ---------------------------------------------------------------
-
-
 def build_client(*, mock: bool, region: str) -> AwsClient:
     return MockAwsClient(region) if mock else RealAwsClient(region)
 
 
 def get_aws_client(settings) -> AwsClient:
-    """Return the right AwsClient implementation based on settings.mock_aws."""
     return build_client(mock=settings.mock_aws, region=settings.aws_region)

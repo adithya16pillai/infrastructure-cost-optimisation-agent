@@ -1,4 +1,3 @@
-"""PRD 02 acceptance: the AWS data layer and mock fixtures."""
 from __future__ import annotations
 
 from datetime import datetime, timezone

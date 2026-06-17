@@ -1,4 +1,3 @@
-"""Validator: each verdict status flows into the ValidatedFinding (mocked LLM)."""
 from __future__ import annotations
 
 from types import SimpleNamespace

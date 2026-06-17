@@ -1,4 +1,3 @@
-"""HTTP API: trigger an analysis, poll its status, fetch recommendations."""
 from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query

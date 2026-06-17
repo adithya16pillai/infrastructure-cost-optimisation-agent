@@ -70,32 +70,22 @@ export function Dashboard() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
-      <header className="mb-6 flex items-center justify-between">
+    <div className="dashboard">
+      <header className="dashboard-header">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Infrastructure Cost Optimiser
-          </h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="dashboard-title">Infrastructure Cost Optimiser</h1>
+          <p className="dashboard-subtitle">
             Agentic FinOps analysis of AWS spend, with LLM-validated recommendations.
           </p>
         </div>
-        <button
-          onClick={handleRun}
-          disabled={isRunning}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <button onClick={handleRun} disabled={isRunning} className="btn-run">
           {isRunning ? "Analysing…" : "Run Analysis"}
         </button>
       </header>
 
-      <section className="mb-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="status-panel">
         <AnalysisStatus run={run} totalSavingsUsd={totalSavingsUsd} isPolling={isRunning} />
-        {error && (
-          <p className="mt-2 rounded bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
-          </p>
-        )}
+        {error && <p className="error-banner">{error}</p>}
       </section>
 
       <RecommendationList

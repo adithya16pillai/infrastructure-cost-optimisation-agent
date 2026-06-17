@@ -1,4 +1,3 @@
-"""SQLAlchemy engine, session factory, and declarative base."""
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -21,14 +20,12 @@ Base = declarative_base()
 
 
 def init_db() -> None:
-    """Create all tables. Import models first so they register on Base.metadata."""
     from app.models import analysis_run, recommendation  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 
 
 def get_db() -> Iterator[Session]:
-    """FastAPI dependency that yields a session and always closes it."""
     db = SessionLocal()
     try:
         yield db

@@ -1,4 +1,3 @@
-"""API-level test: trigger a run and read back recommendations."""
 from __future__ import annotations
 
 from fastapi.testclient import TestClient

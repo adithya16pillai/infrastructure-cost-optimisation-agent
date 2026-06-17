@@ -1,7 +1,3 @@
-"""Detector: EBS volumes that are not attached to any instance.
-
-Rule: volume `state == "available"`.
-"""
 from __future__ import annotations
 
 import logging

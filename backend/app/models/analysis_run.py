@@ -1,7 +1,6 @@
-"""AnalysisRun ORM model and API schemas."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Boolean, DateTime, Integer, String, Text
@@ -19,7 +18,7 @@ class AnalysisRun(Base):
         String(20), default=RunStatus.RUNNING.value, nullable=False
     )
     started_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -42,9 +41,6 @@ class AnalysisRun(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-
-
-# --- API schemas -----------------------------------------------------------
 
 
 class AnalysisRunOut(BaseModel):

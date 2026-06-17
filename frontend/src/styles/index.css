@@ -11,3 +11,124 @@ body,
 body {
   @apply bg-slate-50 text-slate-900 antialiased;
 }
+
+@layer components {
+  /* Dashboard */
+  .dashboard {
+    @apply mx-auto max-w-5xl px-6 py-8;
+  }
+  .dashboard-header {
+    @apply mb-6 flex items-center justify-between;
+  }
+  .dashboard-title {
+    @apply text-2xl font-bold tracking-tight;
+  }
+  .dashboard-subtitle {
+    @apply text-sm text-slate-500;
+  }
+  .btn-run {
+    @apply rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .status-panel {
+    @apply mb-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm;
+  }
+  .error-banner {
+    @apply mt-2 rounded bg-red-50 px-3 py-2 text-sm text-red-700;
+  }
+
+  /* Recommendation list */
+  .rec-grid {
+    @apply grid gap-4 sm:grid-cols-2;
+  }
+  .rec-skeleton {
+    @apply h-40 animate-pulse rounded-lg border border-slate-200 bg-white;
+  }
+  .rec-empty {
+    @apply text-sm text-slate-500;
+  }
+
+  /* Recommendation card */
+  .rec-card {
+    @apply rounded-lg border border-slate-200 bg-white p-4 shadow-sm;
+  }
+  .rec-card-head {
+    @apply flex items-start justify-between gap-4;
+  }
+  .rec-badge {
+    @apply inline-block rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600;
+  }
+  .rec-title {
+    @apply mt-2 font-semibold text-slate-900;
+  }
+  .rec-meta {
+    @apply text-xs text-slate-500;
+  }
+  .rec-savings-col {
+    @apply text-right;
+  }
+  .rec-savings {
+    @apply text-lg font-bold text-emerald-700;
+  }
+  .rec-savings-unit {
+    @apply text-xs text-slate-500;
+  }
+  .rec-desc {
+    @apply mt-3 text-sm text-slate-700;
+  }
+  .rec-verdict {
+    @apply mt-3 rounded-md border px-3 py-2 text-sm;
+  }
+  .rec-verdict-title {
+    @apply font-semibold;
+  }
+  .rec-verdict-reason {
+    @apply mt-1 leading-snug;
+  }
+  .verdict-pending {
+    @apply border-slate-200 bg-slate-100 text-slate-700;
+  }
+  .verdict-approve {
+    @apply border-emerald-200 bg-emerald-100 text-emerald-800;
+  }
+  .verdict-needs_review {
+    @apply border-amber-200 bg-amber-100 text-amber-800;
+  }
+  .verdict-reject {
+    @apply border-red-200 bg-red-100 text-red-800;
+  }
+
+  /* Analysis status */
+  .status-empty {
+    @apply text-sm text-slate-500;
+  }
+  .status-emphasis {
+    @apply font-medium;
+  }
+  .status-row {
+    @apply flex flex-wrap items-center gap-4 text-sm;
+  }
+  .status-badge {
+    @apply rounded-full px-3 py-1 font-medium capitalize;
+  }
+  .status-running {
+    @apply bg-blue-100 text-blue-700;
+  }
+  .status-completed {
+    @apply bg-emerald-100 text-emerald-700;
+  }
+  .status-failed {
+    @apply bg-red-100 text-red-700;
+  }
+  .status-meta {
+    @apply text-slate-600;
+  }
+  .status-code {
+    @apply text-xs;
+  }
+  .status-savings {
+    @apply font-semibold text-emerald-700;
+  }
+  .status-error {
+    @apply text-red-600;
+  }
+}

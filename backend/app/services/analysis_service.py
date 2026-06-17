@@ -1,9 +1,8 @@
-"""Orchestration between the API layer, the LangGraph agent, and storage."""
 from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -31,7 +30,6 @@ def create_run(db: Session, *, mock: bool, region: str) -> AnalysisRun:
 
 
 def _persist_findings(db: Session, run_id: str, findings: list[dict]) -> int:
-    """Persist findings, returning the total estimated savings in cents."""
     total_cents = 0
     for f in findings:
         total_cents += f["estimated_monthly_savings_cents"]
@@ -59,8 +57,6 @@ def _persist_findings(db: Session, run_id: str, findings: list[dict]) -> int:
 
 
 def execute_run(run_id: str) -> None:
-    """Run the agent for an existing run id. Manages its own DB session so it is
-    safe to call from a FastAPI BackgroundTask."""
     db = SessionLocal()
     try:
         run = db.get(AnalysisRun, run_id)
@@ -75,7 +71,7 @@ def execute_run(run_id: str) -> None:
         total_cents = _persist_findings(db, run_id, findings)
 
         run.status = RunStatus.COMPLETED.value
-        run.completed_at = datetime.utcnow()
+        run.completed_at = datetime.now(timezone.utc)
         run.total_recommendations = len(findings)
         run.total_estimated_savings_cents = total_cents
         db.commit()
@@ -87,14 +83,13 @@ def execute_run(run_id: str) -> None:
         if run is not None:
             run.status = RunStatus.FAILED.value
             run.error = str(exc)
-            run.completed_at = datetime.utcnow()
+            run.completed_at = datetime.now(timezone.utc)
             db.commit()
     finally:
         db.close()
 
 
 def run_analysis_sync(*, mock: bool, region: str) -> str:
-    """Convenience for tests: create and execute a run synchronously."""
     db = SessionLocal()
     try:
         run = create_run(db, mock=mock, region=region)

@@ -1,4 +1,3 @@
-"""Integration test: run the full LangGraph agent against mock data."""
 from __future__ import annotations
 
 import time

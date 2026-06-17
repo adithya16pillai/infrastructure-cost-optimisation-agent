@@ -1,4 +1,3 @@
-"""Shared enums used across models, agent, and API."""
 from __future__ import annotations
 
 from enum import Enum

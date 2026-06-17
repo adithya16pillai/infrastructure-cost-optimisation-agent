@@ -1,4 +1,3 @@
-"""LangGraph agent state and the canonical Finding shapes."""
 from __future__ import annotations
 
 import operator

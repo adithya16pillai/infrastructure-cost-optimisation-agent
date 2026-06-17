@@ -1,4 +1,3 @@
-"""Validator: malformed model output falls back to needs_review (mocked LLM)."""
 from __future__ import annotations
 
 from types import SimpleNamespace

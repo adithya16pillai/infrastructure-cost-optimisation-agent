@@ -1,8 +1,3 @@
-"""Test configuration.
-
-Set environment BEFORE any app module imports so the cached Settings picks up a
-throwaway SQLite database and mock mode. No AWS or Anthropic credentials needed.
-"""
 from __future__ import annotations
 
 import os

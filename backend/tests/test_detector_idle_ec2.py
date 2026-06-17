@@ -1,4 +1,3 @@
-"""Unit tests for the idle EC2 detector."""
 from __future__ import annotations
 
 from app.agent.detectors import idle_ec2

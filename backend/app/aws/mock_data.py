@@ -1,13 +1,3 @@
-"""Deterministic mock AWS data.
-
-Hand-crafted fixtures that exercise every detector. EC2/EBS fixtures are fully
-fixed (identical every run). Snapshot timestamps are computed relative to "now"
-so the "older than 180 days" property holds no matter when the analysis runs;
-their count is still deterministic.
-
-CPU utilisation is generated with a fixed-seed RNG per instance, so it is
-believable noise rather than flat zeros — but identical run-to-run.
-"""
 from __future__ import annotations
 
 import random
@@ -77,7 +67,6 @@ def ec2_instances(region: str) -> list[dict]:
 
 
 def cpu_utilization(instance_id: str, days: int) -> list[float]:
-    """Daily-average CPU percentages, oldest first. Deterministic per instance."""
     profile = _CPU_PROFILE.get(instance_id)
     if profile is None:
         return []

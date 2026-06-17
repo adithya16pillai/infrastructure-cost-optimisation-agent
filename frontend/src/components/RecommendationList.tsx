@@ -9,12 +9,9 @@ interface Props {
 export function RecommendationList({ recommendations, loading }: Props) {
   if (loading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="rec-grid">
         {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-40 animate-pulse rounded-lg border border-slate-200 bg-white"
-          />
+          <div key={i} className="rec-skeleton" />
         ))}
       </div>
     );
@@ -22,14 +19,14 @@ export function RecommendationList({ recommendations, loading }: Props) {
 
   if (recommendations.length === 0) {
     return (
-      <p className="text-sm text-slate-500">
+      <p className="rec-empty">
         No recommendations yet. Run an analysis to surface cost-saving opportunities.
       </p>
     );
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="rec-grid">
       {recommendations.map((rec) => (
         <RecommendationCard key={rec.id} rec={rec} />
       ))}

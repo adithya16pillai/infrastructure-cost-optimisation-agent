@@ -1,4 +1,3 @@
-"""Unit tests for the unattached EBS detector."""
 from __future__ import annotations
 
 from app.agent.detectors import unattached_ebs

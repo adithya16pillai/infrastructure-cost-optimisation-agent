@@ -1,14 +1,3 @@
-"""LangGraph StateGraph: ingest -> 3 parallel detectors -> aggregate -> validate.
-
-    ingest
-      ├──► detect_idle_ec2       ┐
-      ├──► detect_unattached_ebs ├─► aggregate ─► validate ─► END
-      └──► detect_old_snapshots  ┘
-
-Each detector writes to its own state key, so the parallel superstep has no
-write contention; `aggregate` merges them. The graph is built per AwsClient so
-detectors share one client (and one ingest snapshot) rather than re-fetching.
-"""
 from __future__ import annotations
 
 import logging
@@ -24,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 def ingest_node(state: AgentState, aws_client: AwsClient) -> dict:
-    """Snapshot AWS data once so detectors don't double-fetch."""
     run_id = state.get("run_id", "?")
     logger.info("[%s] ingest (region=%s)", run_id, aws_client.region)
     return {
@@ -81,7 +69,6 @@ def build_graph(aws_client: AwsClient):
 
 
 def run_agent(*, run_id: str, mock: bool, region: str) -> list[dict]:
-    """Execute the full graph and return validated findings as plain dicts."""
     aws_client = build_client(mock=mock, region=region)
     graph = build_graph(aws_client)
     final_state = graph.invoke({"run_id": run_id})

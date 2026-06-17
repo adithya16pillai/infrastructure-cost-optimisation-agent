@@ -1,7 +1,6 @@
-"""Recommendation ORM model and API schemas."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict, computed_field
 from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text
@@ -45,18 +44,13 @@ class Recommendation(Base):
     description: Mapped[str] = mapped_column(Text, default="", nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
 
     run = relationship("AnalysisRun", back_populates="recommendations")
 
 
-# --- API schemas -----------------------------------------------------------
-
-
 class RecommendationOut(BaseModel):
-    """Full read model."""
-
     model_config = ConfigDict(from_attributes=True)
 
     id: str
@@ -80,8 +74,6 @@ class RecommendationOut(BaseModel):
 
 
 class RecommendationSummary(BaseModel):
-    """Lightweight projection for list views."""
-
     model_config = ConfigDict(from_attributes=True)
 
     id: str
