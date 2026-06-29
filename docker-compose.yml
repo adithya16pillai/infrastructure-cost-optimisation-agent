@@ -2,9 +2,11 @@ services:
   backend:
     build: ./backend
     environment:
-      MOCK_AWS: "true"
+      MOCK_CLOUD: "true"
+      CLOUD_PROVIDER: "${CLOUD_PROVIDER:-aws}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
       AWS_REGION: "${AWS_REGION:-us-east-1}"
+      GCP_REGION: "${GCP_REGION:-us-central1}"
     ports:
       - "8000:8000"
 

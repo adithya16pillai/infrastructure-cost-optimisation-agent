@@ -1,20 +1,24 @@
 # Infrastructure Cost Optimisation Agent
 
-An agentic FinOps tool that pulls AWS cost and utilisation data, runs a
-**LangGraph** agent to detect cost-saving opportunities, validates each one
+An agentic FinOps tool that pulls **AWS or GCP** cost and utilisation data, runs
+a **LangGraph** agent to detect cost-saving opportunities, validates each one
 through an **LLM (Claude)** that assesses feasibility and risk, and surfaces the
-approved recommendations in a **React** dashboard.
+approved recommendations in a **React** dashboard. Pick the cloud provider per
+run from a dropdown in the UI.
 
 It ships with a deterministic **mock data mode** so the entire pipeline runs
-end-to-end with no AWS or Anthropic credentials.
+end-to-end with no cloud or Anthropic credentials.
 
 ## What it detects
 
-| Detector | Fires when | Savings estimate |
-|---|---|---|
-| **Idle EC2** | A running instance averages CPU below the idle threshold over the lookback window | Full on-demand monthly cost of the instance |
-| **Unattached EBS** | A volume is in the `available` state (attached to nothing) | Monthly storage cost for the volume |
-| **Old EBS snapshots** | A snapshot is older than the retention threshold | Monthly snapshot storage cost |
+The detectors are cloud-neutral: they operate on a normalized resource model
+(`compute` / `disk` / `snapshot`) so the same logic serves both AWS and GCP.
+
+| Detector | Fires when | AWS / GCP resources | Savings estimate |
+|---|---|---|---|
+| **Idle Compute** | A running instance averages CPU below the idle threshold over the lookback window | EC2 / Compute Engine VM | Full on-demand monthly cost of the instance |
+| **Unattached Disk** | A disk is in the `available` state (attached to nothing) | EBS volume / Persistent Disk | Monthly storage cost for the disk |
+| **Old Snapshots** | A snapshot is older than the retention threshold | EBS / PD snapshot | Monthly snapshot storage cost |
 
 Each finding is then reviewed by the LLM validator (Claude, via the Anthropic
 SDK), which assesses feasibility and risk and returns `approve` / `needs_review`
@@ -30,13 +34,20 @@ deterministic heuristic stands in so the app still runs end-to-end.
 
 ```
 React UI (Vite)  ──HTTP──►  FastAPI
-                            └─ LangGraph agent:
+   (provider: aws|gcp)      └─ LangGraph agent:
                                  ingest
-                                   ├─► detect_idle_ec2     ┐
-                                   ├─► detect_unattached   ├─► aggregate ─► validate (LLM) ─► SQLite
-                                   └─► detect_old_snapshots ┘
-                            └─ AWS layer (boto3 + deterministic mock)
+                                   ├─► detect_idle_compute    ┐
+                                   ├─► detect_unattached_disk ├─► aggregate ─► validate (LLM) ─► SQLite
+                                   └─► detect_old_snapshots   ┘
+                            └─ Cloud layer: CloudClient protocol
+                                 ├─ AWS  (boto3 + deterministic mock)
+                                 └─ GCP  (mock; real SDK client stubbed)
 ```
+
+A `CloudClient` protocol (`app/cloud/base.py`) normalizes each provider's
+resources into the same shapes, so the detectors stay provider-agnostic. The
+provider is chosen per run and tags every finding. GCP currently runs on mock
+data — `RealGcpClient` is a stub for a future google-cloud SDK integration.
 
 The three detectors run as a parallel LangGraph superstep and merge their
 findings into shared state via a list reducer. `aggregate` is the fan-in
@@ -84,20 +95,28 @@ Copy `backend/.env.example` to `backend/.env` and adjust as needed:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `MOCK_AWS` | `true` | Use deterministic mock data instead of real AWS |
+| `MOCK_CLOUD` | `true` | Use deterministic mock data instead of real cloud APIs |
+| `CLOUD_PROVIDER` | `aws` | Default provider when a request omits one (`aws` \| `gcp`) |
 | `ANTHROPIC_API_KEY` | _empty_ | Enables the Claude-backed validator; falls back to a heuristic if unset |
 | `VALIDATOR_MODEL` | `claude-sonnet-4-6` | Model used by the LLM validator |
 | `AWS_REGION` | `us-east-1` | Region for boto3 calls |
+| `GCP_REGION` | `us-central1` | Region for GCP calls |
+| `GCP_PROJECT_ID` | _empty_ | GCP project (used once the real GCP client is wired up) |
 | `DATABASE_URL` | `sqlite:///./app.db` | Storage |
 | `LOG_LEVEL` | `INFO` | Root log level |
-| `IDLE_CPU_PERCENT_THRESHOLD` | `5.0` | Idle EC2 CPU cutoff |
-| `IDLE_LOOKBACK_DAYS` | `14` | CloudWatch lookback window |
-| `SNAPSHOT_AGE_DAYS_THRESHOLD` | `90` | Old-snapshot cutoff |
+| `IDLE_CPU_PERCENT_THRESHOLD` | `5.0` | Idle compute CPU cutoff |
+| `IDLE_LOOKBACK_DAYS` | `14` | CPU-metrics lookback window |
+| `SNAPSHOT_AGE_DAYS_THRESHOLD` | `180` | Old-snapshot cutoff |
+
+The provider is selected **per run** from the dashboard dropdown (or the
+`provider` field in the `POST /api/analysis/run` body); `CLOUD_PROVIDER` is only
+the fallback default.
 
 ### Real AWS mode
 
-Set `MOCK_AWS=false` and provide credentials via the standard boto3 chain
-(env vars, shared config, or an instance role). The agent then uses:
+Set `MOCK_CLOUD=false` (with `CLOUD_PROVIDER=aws`) and provide credentials via
+the standard boto3 chain (env vars, shared config, or an instance role). The
+agent then uses:
 
 - `ec2:DescribeInstances`, `ec2:DescribeVolumes`, `ec2:DescribeSnapshots`
 - `cloudwatch:GetMetricStatistics` (CPU utilisation)
@@ -105,13 +124,19 @@ Set `MOCK_AWS=false` and provide credentials via the standard boto3 chain
 A read-only IAM policy is sufficient — the tool only *surfaces* recommendations;
 it never modifies or deletes resources.
 
+### Real GCP mode
+
+Not yet implemented. `RealGcpClient` is a stub that raises `NotImplementedError`;
+run GCP analyses with `MOCK_CLOUD=true`. Wiring it up means implementing the
+`CloudClient` methods over `google-cloud-compute` and `google-cloud-monitoring`.
+
 ## API
 
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/health` | Liveness + mock mode |
 | `GET` | `/api/health` | Mode + LLM status |
-| `POST` | `/api/analysis/run` | Trigger an analysis run (returns `run_id`, runs in background) |
+| `POST` | `/api/analysis/run` | Trigger an analysis run — optional JSON body `{ "provider": "aws"\|"gcp", "region"?: string }` (returns `run_id`, runs in background) |
 | `GET` | `/api/analysis/{run_id}` | Run status + recommendation count |
 | `GET` | `/api/runs` | Recent runs |
 | `GET` | `/api/recommendations?run_id=` | Recommendations (optionally filtered by run) |
