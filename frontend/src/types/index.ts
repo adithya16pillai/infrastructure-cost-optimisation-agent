@@ -1,11 +1,13 @@
-export type ResourceType = "ec2" | "ebs" | "snapshot";
-export type FindingType = "idle_ec2" | "unattached_ebs" | "old_snapshot";
+export type CloudProvider = "aws" | "gcp";
+export type ResourceType = "compute" | "disk" | "snapshot";
+export type FindingType = "idle_compute" | "unattached_disk" | "old_snapshot";
 export type ValidationStatus = "pending" | "approve" | "needs_review" | "reject";
 export type RunStatus = "running" | "completed" | "failed";
 
 export interface Recommendation {
   id: string;
   run_id: string;
+  provider: CloudProvider;
   resource_type: ResourceType;
   resource_id: string;
   region: string;
@@ -27,9 +29,15 @@ export interface AnalysisRun {
   completed_at: string | null;
   error: string | null;
   mock_mode: boolean;
+  provider: CloudProvider;
   total_recommendations: number;
   total_estimated_savings_cents: number;
   region: string;
+}
+
+export interface TriggerRequest {
+  provider: CloudProvider;
+  region?: string;
 }
 
 export interface TriggerResponse {

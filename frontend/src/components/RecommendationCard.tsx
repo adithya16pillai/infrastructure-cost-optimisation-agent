@@ -1,9 +1,19 @@
-import type { FindingType, Recommendation, ValidationStatus } from "../types";
+import type {
+  CloudProvider,
+  FindingType,
+  Recommendation,
+  ValidationStatus,
+} from "../types";
 
 const FINDING_LABELS: Record<FindingType, string> = {
-  idle_ec2: "Idle EC2",
-  unattached_ebs: "Unattached EBS",
+  idle_compute: "Idle Compute",
+  unattached_disk: "Unattached Disk",
   old_snapshot: "Old Snapshot",
+};
+
+const PROVIDER_LABELS: Record<CloudProvider, string> = {
+  aws: "AWS",
+  gcp: "GCP",
 };
 
 const VALIDATION_STYLES: Record<ValidationStatus, string> = {
@@ -25,6 +35,9 @@ export function RecommendationCard({ rec }: { rec: Recommendation }) {
     <article className="rec-card">
       <div className="rec-card-head">
         <div>
+          <span className={`rec-provider rec-provider-${rec.provider}`}>
+            {PROVIDER_LABELS[rec.provider]}
+          </span>
           <span className="rec-badge">{FINDING_LABELS[rec.finding_type]}</span>
           <h3 className="rec-title">{rec.title}</h3>
           <p className="rec-meta">

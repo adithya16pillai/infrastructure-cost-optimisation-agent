@@ -32,7 +32,7 @@ export function AnalysisStatus({ run, totalSavingsUsd, isPolling }: Props) {
         Run <code className="status-code">{run.id.slice(0, 8)}</code>
       </span>
       <span className="status-meta">
-        {run.mock_mode ? "Mock data" : "Live AWS"} · {run.region}
+        {run.mock_mode ? "Mock" : "Live"} {run.provider.toUpperCase()} · {run.region}
       </span>
       {run.status === "completed" && (
         <>

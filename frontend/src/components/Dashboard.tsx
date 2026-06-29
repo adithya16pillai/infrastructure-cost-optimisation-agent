@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
-import type { AnalysisRun, Recommendation } from "../types";
+import type { AnalysisRun, CloudProvider, Recommendation } from "../types";
 import { AnalysisStatus } from "./AnalysisStatus";
 import { RecommendationList } from "./RecommendationList";
 
@@ -10,6 +10,7 @@ const TERMINAL = new Set(["completed", "failed"]);
 export function Dashboard() {
   const [run, setRun] = useState<AnalysisRun | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [provider, setProvider] = useState<CloudProvider>("aws");
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<number | null>(null);
@@ -54,7 +55,7 @@ export function Dashboard() {
     setRecommendations([]);
     setIsRunning(true);
     try {
-      const { run_id } = await api.triggerAnalysis();
+      const { run_id } = await api.triggerAnalysis(provider);
       const initial = await api.getRun(run_id);
       setRun(initial);
       pollRun(run_id);
@@ -62,7 +63,7 @@ export function Dashboard() {
       setIsRunning(false);
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [pollRun]);
+  }, [pollRun, provider]);
 
   const totalSavingsUsd = recommendations.reduce(
     (sum, r) => sum + r.estimated_monthly_savings_usd,
@@ -75,12 +76,26 @@ export function Dashboard() {
         <div>
           <h1 className="dashboard-title">Infrastructure Cost Optimiser</h1>
           <p className="dashboard-subtitle">
-            Agentic FinOps analysis of AWS spend, with LLM-validated recommendations.
+            Agentic FinOps analysis of AWS and GCP spend, with LLM-validated
+            recommendations.
           </p>
         </div>
-        <button onClick={handleRun} disabled={isRunning} className="btn-run">
-          {isRunning ? "Analysing…" : "Run Analysis"}
-        </button>
+        <div className="dashboard-controls">
+          <label className="provider-select">
+            <span className="provider-select-label">Provider</span>
+            <select
+              value={provider}
+              onChange={(e) => setProvider(e.target.value as CloudProvider)}
+              disabled={isRunning}
+            >
+              <option value="aws">AWS</option>
+              <option value="gcp">GCP</option>
+            </select>
+          </label>
+          <button onClick={handleRun} disabled={isRunning} className="btn-run">
+            {isRunning ? "Analysing…" : "Run Analysis"}
+          </button>
+        </div>
       </header>
 
       <section className="status-panel">

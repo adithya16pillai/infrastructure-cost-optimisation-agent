@@ -1,5 +1,6 @@
 import type {
   AnalysisRun,
+  CloudProvider,
   Recommendation,
   TriggerResponse,
 } from "../types";
@@ -19,8 +20,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  triggerAnalysis: () =>
-    request<TriggerResponse>("/analysis/run", { method: "POST" }),
+  triggerAnalysis: (provider: CloudProvider) =>
+    request<TriggerResponse>("/analysis/run", {
+      method: "POST",
+      body: JSON.stringify({ provider }),
+    }),
 
   getRun: (runId: string) => request<AnalysisRun>(`/analysis/${runId}`),
 
@@ -30,7 +34,10 @@ export const api = {
     ),
 
   health: () =>
-    request<{ status: string; mock_aws: boolean; llm_enabled: boolean }>(
-      "/health",
-    ),
+    request<{
+      status: string;
+      mock_cloud: boolean;
+      llm_enabled: boolean;
+      providers: CloudProvider[];
+    }>("/health"),
 };
