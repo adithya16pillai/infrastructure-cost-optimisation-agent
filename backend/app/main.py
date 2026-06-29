@@ -20,10 +20,11 @@ logging.basicConfig(
 async def lifespan(app: FastAPI):
     init_db()
     logging.getLogger(__name__).info(
-        "startup: mock_aws=%s llm_enabled=%s region=%s",
-        settings.mock_aws,
+        "startup: mock_cloud=%s provider=%s llm_enabled=%s region=%s",
+        settings.mock_cloud,
+        settings.cloud_provider,
         settings.has_llm,
-        settings.aws_region,
+        settings.default_region_for(settings.cloud_provider),
     )
     yield
 
@@ -43,4 +44,4 @@ app.include_router(router)
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "mock_aws": settings.mock_aws}
+    return {"status": "ok", "mock_cloud": settings.mock_cloud}

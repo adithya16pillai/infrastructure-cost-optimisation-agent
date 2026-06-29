@@ -7,8 +7,9 @@ from typing_extensions import NotRequired
 
 
 class Finding(TypedDict):
-    finding_type: str  # "idle_ec2" | "unattached_ebs" | "old_snapshot"
-    resource_type: str  # "ec2" | "ebs" | "snapshot"
+    provider: str  # "aws" | "gcp"
+    finding_type: str  # "idle_compute" | "unattached_disk" | "old_snapshot"
+    resource_type: str  # "compute" | "disk" | "snapshot"
     resource_id: str
     region: str
     estimated_monthly_savings_cents: int
@@ -26,11 +27,12 @@ class ValidatedFinding(Finding):
 
 class AgentState(TypedDict):
     run_id: str
+    provider: NotRequired[str]  # cloud provider for this run ("aws" | "gcp")
     raw_data: NotRequired[dict]  # snapshot of what was fetched (traceability)
 
     # Each detector writes its own key so parallel updates don't conflict.
-    idle_ec2_findings: NotRequired[list[Finding]]
-    unattached_ebs_findings: NotRequired[list[Finding]]
+    idle_compute_findings: NotRequired[list[Finding]]
+    unattached_disk_findings: NotRequired[list[Finding]]
     old_snapshot_findings: NotRequired[list[Finding]]
 
     aggregated_findings: NotRequired[list[Finding]]

@@ -21,7 +21,7 @@ def _days_ago_iso(days: int) -> str:
     return dt.isoformat().replace("+00:00", "Z")
 
 
-def ec2_instances(region: str) -> list[dict]:
+def compute_instances(region: str) -> list[dict]:
     return [
         {
             "instance_id": "i-0idle001",
@@ -75,31 +75,31 @@ def cpu_utilization(instance_id: str, days: int) -> list[float]:
     return [round(rng.uniform(low, high), 1) for _ in range(days)]
 
 
-def ebs_volumes(region: str) -> list[dict]:
+def disks(region: str) -> list[dict]:
     return [
         # 3 unattached (state "available").
         {
-            "volume_id": "vol-0unatt001",
+            "disk_id": "vol-0unatt001",
             "size_gb": 500,
-            "volume_type": "gp3",
+            "disk_type": "gp3",
             "region": region,
             "state": "available",
             "attached_instance_id": None,
             "create_time": "2024-11-02T10:00:00Z",
         },
         {
-            "volume_id": "vol-0unatt002",
+            "disk_id": "vol-0unatt002",
             "size_gb": 100,
-            "volume_type": "gp2",
+            "disk_type": "gp2",
             "region": region,
             "state": "available",
             "attached_instance_id": None,
             "create_time": "2025-01-18T16:20:00Z",
         },
         {
-            "volume_id": "vol-0unatt003",
+            "disk_id": "vol-0unatt003",
             "size_gb": 250,
-            "volume_type": "gp3",
+            "disk_type": "gp3",
             "region": region,
             "state": "available",
             "attached_instance_id": None,
@@ -107,27 +107,27 @@ def ebs_volumes(region: str) -> list[dict]:
         },
         # 3 attached (state "in-use").
         {
-            "volume_id": "vol-0attach001",
+            "disk_id": "vol-0attach001",
             "size_gb": 200,
-            "volume_type": "gp3",
+            "disk_type": "gp3",
             "region": region,
             "state": "in-use",
             "attached_instance_id": "i-0busy001",
             "create_time": "2025-02-15T09:45:00Z",
         },
         {
-            "volume_id": "vol-0attach002",
+            "disk_id": "vol-0attach002",
             "size_gb": 50,
-            "volume_type": "gp2",
+            "disk_type": "gp2",
             "region": region,
             "state": "in-use",
             "attached_instance_id": "i-0peak001",
             "create_time": "2025-04-10T11:30:00Z",
         },
         {
-            "volume_id": "vol-0attach003",
+            "disk_id": "vol-0attach003",
             "size_gb": 300,
-            "volume_type": "io2",
+            "disk_type": "io2",
             "region": region,
             "state": "in-use",
             "attached_instance_id": "i-0idle001",
@@ -136,7 +136,7 @@ def ebs_volumes(region: str) -> list[dict]:
     ]
 
 
-def ebs_snapshots() -> list[dict]:
+def snapshots() -> list[dict]:
     # 4 older than 180 days; 4 newer (all under 90 days).
     return [
         {

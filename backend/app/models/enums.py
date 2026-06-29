@@ -3,15 +3,20 @@ from __future__ import annotations
 from enum import Enum
 
 
+class CloudProvider(str, Enum):
+    AWS = "aws"
+    GCP = "gcp"
+
+
 class ResourceType(str, Enum):
-    EC2 = "ec2"
-    EBS = "ebs"
+    COMPUTE = "compute"
+    DISK = "disk"
     SNAPSHOT = "snapshot"
 
 
 class FindingType(str, Enum):
-    IDLE_EC2 = "idle_ec2"
-    UNATTACHED_EBS = "unattached_ebs"
+    IDLE_COMPUTE = "idle_compute"
+    UNATTACHED_DISK = "unattached_disk"
     OLD_SNAPSHOT = "old_snapshot"
 
 

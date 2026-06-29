@@ -17,9 +17,10 @@ class ValidationVerdict(BaseModel):
     risk_factors: list[str] = Field(default_factory=list, max_length=5)
 
 
-SYSTEM_PROMPT = """You are a senior cloud engineer reviewing automated AWS cost-saving recommendations
-before they are shown to a human operator. Your job is to assess whether the
-recommendation is safe to act on and whether the evidence supports it.
+SYSTEM_PROMPT = """You are a senior cloud engineer reviewing automated cloud (AWS or GCP)
+cost-saving recommendations before they are shown to a human operator. Your job
+is to assess whether the recommendation is safe to act on and whether the
+evidence supports it.
 
 For each recommendation, output a JSON object matching this schema exactly:
 {
@@ -42,6 +43,7 @@ keywords in descriptions. Output ONLY the JSON object, no preamble."""
 def format_user_message(finding: dict) -> str:
     dollars = finding["estimated_monthly_savings_cents"] / 100
     return (
+        f"Provider: {finding.get('provider', 'unknown')}\n"
         f"Finding type: {finding['finding_type']}\n"
         f"Resource: {finding['resource_type']} {finding['resource_id']} "
         f"in {finding['region']}\n"
@@ -91,14 +93,14 @@ def _heuristic(finding: dict) -> ValidationVerdict:
     ftype = finding["finding_type"]
     ev = finding["evidence"]
 
-    if ftype == "unattached_ebs":
+    if ftype == "unattached_disk":
         return ValidationVerdict(
             status="approve",
             reasoning=(
-                "Unattached volumes incur cost with no compute benefit. Snapshot first "
+                "Unattached disks incur cost with no compute benefit. Snapshot first "
                 "for safety, then delete. Low operational risk."
             ),
-            risk_factors=["data loss if the volume is still needed"],
+            risk_factors=["data loss if the disk is still needed"],
         )
     if ftype == "old_snapshot":
         age = ev.get("age_days", 0)
@@ -119,10 +121,10 @@ def _heuristic(finding: dict) -> ValidationVerdict:
             ),
             risk_factors=["possible compliance/retention requirement"],
         )
-    if ftype == "idle_ec2":
+    if ftype == "idle_compute":
         tags = ev.get("tags", {}) or {}
-        env = str(tags.get("Environment", "")).lower()
-        name = str(tags.get("Name", "")).lower()
+        env = str(tags.get("Environment", tags.get("env", ""))).lower()
+        name = str(tags.get("Name", tags.get("name", ""))).lower()
         if "prod" in env or "prod" in name:
             return ValidationVerdict(
                 status="needs_review",

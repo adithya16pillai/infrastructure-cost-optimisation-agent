@@ -24,6 +24,11 @@ class AnalysisRun(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     mock_mode: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
+    # Cloud provider this run analysed ("aws" | "gcp").
+    provider: Mapped[str] = mapped_column(
+        String(16), default="aws", nullable=False
+    )
+
     # Denormalised for dashboard speed.
     total_recommendations: Mapped[int] = mapped_column(
         Integer, default=0, nullable=False
@@ -52,6 +57,7 @@ class AnalysisRunOut(BaseModel):
     completed_at: datetime | None = None
     error: str | None = None
     mock_mode: bool
+    provider: str
     total_recommendations: int
     total_estimated_savings_cents: int
     region: str

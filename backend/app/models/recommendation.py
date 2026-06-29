@@ -18,6 +18,7 @@ class Recommendation(Base):
         String(36), ForeignKey("analysis_runs.id", ondelete="CASCADE"), nullable=False
     )
 
+    provider: Mapped[str] = mapped_column(String(16), default="aws", nullable=False)
     resource_type: Mapped[str] = mapped_column(String(16), nullable=False)
     resource_id: Mapped[str] = mapped_column(String(128), nullable=False)
     region: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -55,6 +56,7 @@ class RecommendationOut(BaseModel):
 
     id: str
     run_id: str
+    provider: str
     resource_type: ResourceType
     resource_id: str
     region: str

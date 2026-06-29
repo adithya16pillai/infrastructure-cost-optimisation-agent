@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -11,28 +12,39 @@ from app.models.analysis_run import (
     AnalysisRunOut,
     TriggerAnalysisResponse,
 )
-from app.models.enums import RunStatus
+from app.models.enums import CloudProvider, RunStatus
 from app.models.recommendation import Recommendation, RecommendationOut
 from app.services import analysis_service
 
 router = APIRouter(prefix="/api", tags=["analysis"])
 
 
+class TriggerAnalysisRequest(BaseModel):
+    provider: CloudProvider | None = None
+    region: str | None = None
+
+
 @router.get("/health")
 def health() -> dict:
     return {
         "status": "ok",
-        "mock_aws": settings.mock_aws,
+        "mock_cloud": settings.mock_cloud,
         "llm_enabled": settings.has_llm,
+        "providers": [p.value for p in CloudProvider],
     }
 
 
 @router.post("/analysis/run", response_model=TriggerAnalysisResponse, status_code=202)
 def trigger_analysis(
-    background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+    background_tasks: BackgroundTasks,
+    body: TriggerAnalysisRequest | None = None,
+    db: Session = Depends(get_db),
 ) -> TriggerAnalysisResponse:
+    body = body or TriggerAnalysisRequest()
+    provider = (body.provider.value if body.provider else settings.cloud_provider)
+    region = body.region or settings.default_region_for(provider)
     run = analysis_service.create_run(
-        db, mock=settings.mock_aws, region=settings.aws_region
+        db, provider=provider, mock=settings.mock_cloud, region=region
     )
     background_tasks.add_task(analysis_service.execute_run, run.id)
     return TriggerAnalysisResponse(run_id=run.id, status=RunStatus(run.status))

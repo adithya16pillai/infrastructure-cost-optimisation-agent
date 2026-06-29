@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Protocol, runtime_checkable
+
+from app.cloud.base import CloudClientError
+from app.models.enums import CloudProvider
 
 logger = logging.getLogger(__name__)
 
@@ -27,19 +29,8 @@ EBS_GB_MONTH_PRICE: dict[str, float] = {
 SNAPSHOT_GB_MONTH_PRICE = 0.05
 
 
-class AwsClientError(Exception):
-    pass
-
-
-@runtime_checkable
-class AwsClient(Protocol):
-    region: str
-
-    def list_ec2_instances(self) -> list[dict]: ...
-    def get_ec2_cpu_utilization(self, instance_id: str, days: int = 14) -> list[float]: ...
-    def list_ebs_volumes(self) -> list[dict]: ...
-    def list_ebs_snapshots(self) -> list[dict]: ...
-    def get_instance_hourly_cost(self, instance_type: str, region: str) -> float: ...
+# Backwards-compatible alias: the AWS client used to raise this name.
+AwsClientError = CloudClientError
 
 
 class _PriceTableMixin:
@@ -52,6 +43,12 @@ class _PriceTableMixin:
             return 0.0
         return region_table[instance_type]
 
+    def get_disk_gb_month_cost(self, disk_type: str) -> float:
+        return EBS_GB_MONTH_PRICE.get(disk_type, 0.08)
+
+    def get_snapshot_gb_month_cost(self) -> float:
+        return SNAPSHOT_GB_MONTH_PRICE
+
 
 def _iso(dt: datetime) -> str:
     if dt.tzinfo is None:
@@ -60,6 +57,8 @@ def _iso(dt: datetime) -> str:
 
 
 class RealAwsClient(_PriceTableMixin):
+    provider = CloudProvider.AWS.value
+
     def __init__(self, region: str) -> None:
         self.region = region
         self._ec2 = None
@@ -81,7 +80,7 @@ class RealAwsClient(_PriceTableMixin):
             self._cw = boto3.client("cloudwatch", region_name=self.region)
         return self._cw
 
-    def list_ec2_instances(self) -> list[dict]:
+    def list_compute_instances(self) -> list[dict]:
         from botocore.exceptions import ClientError
 
         instances: list[dict] = []
@@ -102,10 +101,10 @@ class RealAwsClient(_PriceTableMixin):
                         )
         except ClientError as exc:
             logger.error("describe_instances failed: %s", exc)
-            raise AwsClientError("describe_instances failed") from exc
+            raise CloudClientError("describe_instances failed") from exc
         return instances
 
-    def get_ec2_cpu_utilization(self, instance_id: str, days: int = 14) -> list[float]:
+    def get_cpu_utilization(self, instance_id: str, days: int = 14) -> list[float]:
         from botocore.exceptions import ClientError
 
         end = datetime.now(timezone.utc)
@@ -122,25 +121,25 @@ class RealAwsClient(_PriceTableMixin):
             )
         except ClientError as exc:
             logger.error("get_metric_statistics failed for %s: %s", instance_id, exc)
-            raise AwsClientError("get_metric_statistics failed") from exc
+            raise CloudClientError("get_metric_statistics failed") from exc
 
         points = sorted(resp.get("Datapoints", []), key=lambda p: p["Timestamp"])
         return [round(p["Average"], 2) for p in points]
 
-    def list_ebs_volumes(self) -> list[dict]:
+    def list_disks(self) -> list[dict]:
         from botocore.exceptions import ClientError
 
-        volumes: list[dict] = []
+        disks: list[dict] = []
         try:
             for page in self.ec2.get_paginator("describe_volumes").paginate():
                 for vol in page["Volumes"]:
                     attachments = vol.get("Attachments", [])
                     attached_id = attachments[0]["InstanceId"] if attachments else None
-                    volumes.append(
+                    disks.append(
                         {
-                            "volume_id": vol["VolumeId"],
+                            "disk_id": vol["VolumeId"],
                             "size_gb": vol["Size"],
-                            "volume_type": vol["VolumeType"],
+                            "disk_type": vol["VolumeType"],
                             "region": self.region,
                             "state": vol["State"],
                             "attached_instance_id": attached_id,
@@ -149,10 +148,10 @@ class RealAwsClient(_PriceTableMixin):
                     )
         except ClientError as exc:
             logger.error("describe_volumes failed: %s", exc)
-            raise AwsClientError("describe_volumes failed") from exc
-        return volumes
+            raise CloudClientError("describe_volumes failed") from exc
+        return disks
 
-    def list_ebs_snapshots(self) -> list[dict]:
+    def list_snapshots(self) -> list[dict]:
         from botocore.exceptions import ClientError
 
         snapshots: list[dict] = []
@@ -171,38 +170,32 @@ class RealAwsClient(_PriceTableMixin):
                     )
         except ClientError as exc:
             logger.error("describe_snapshots failed: %s", exc)
-            raise AwsClientError("describe_snapshots failed") from exc
+            raise CloudClientError("describe_snapshots failed") from exc
         return snapshots
 
 
 class MockAwsClient(_PriceTableMixin):
+    provider = CloudProvider.AWS.value
+
     def __init__(self, region: str = "us-east-1") -> None:
         self.region = region
 
-    def list_ec2_instances(self) -> list[dict]:
+    def list_compute_instances(self) -> list[dict]:
         from app.aws import mock_data
 
-        return mock_data.ec2_instances(self.region)
+        return mock_data.compute_instances(self.region)
 
-    def get_ec2_cpu_utilization(self, instance_id: str, days: int = 14) -> list[float]:
+    def get_cpu_utilization(self, instance_id: str, days: int = 14) -> list[float]:
         from app.aws import mock_data
 
         return mock_data.cpu_utilization(instance_id, days)
 
-    def list_ebs_volumes(self) -> list[dict]:
+    def list_disks(self) -> list[dict]:
         from app.aws import mock_data
 
-        return mock_data.ebs_volumes(self.region)
+        return mock_data.disks(self.region)
 
-    def list_ebs_snapshots(self) -> list[dict]:
+    def list_snapshots(self) -> list[dict]:
         from app.aws import mock_data
 
-        return mock_data.ebs_snapshots()
-
-
-def build_client(*, mock: bool, region: str) -> AwsClient:
-    return MockAwsClient(region) if mock else RealAwsClient(region)
-
-
-def get_aws_client(settings) -> AwsClient:
-    return build_client(mock=settings.mock_aws, region=settings.aws_region)
+        return mock_data.snapshots()

@@ -15,21 +15,30 @@ from app.models.recommendation import Recommendation
 logger = logging.getLogger(__name__)
 
 
-def create_run(db: Session, *, mock: bool, region: str) -> AnalysisRun:
+def create_run(db: Session, *, provider: str, mock: bool, region: str) -> AnalysisRun:
     run = AnalysisRun(
         id=str(uuid.uuid4()),
         status=RunStatus.RUNNING.value,
         mock_mode=mock,
+        provider=provider,
         region=region,
     )
     db.add(run)
     db.commit()
     db.refresh(run)
-    logger.info("[%s] run created (mock=%s region=%s)", run.id, mock, region)
+    logger.info(
+        "[%s] run created (provider=%s mock=%s region=%s)",
+        run.id,
+        provider,
+        mock,
+        region,
+    )
     return run
 
 
-def _persist_findings(db: Session, run_id: str, findings: list[dict]) -> int:
+def _persist_findings(
+    db: Session, run_id: str, findings: list[dict], *, provider: str
+) -> int:
     total_cents = 0
     for f in findings:
         total_cents += f["estimated_monthly_savings_cents"]
@@ -37,6 +46,7 @@ def _persist_findings(db: Session, run_id: str, findings: list[dict]) -> int:
             Recommendation(
                 id=str(uuid.uuid4()),
                 run_id=run_id,
+                provider=f.get("provider", provider),
                 resource_type=f["resource_type"],
                 resource_id=f["resource_id"],
                 region=f["region"],
@@ -67,8 +77,13 @@ def execute_run(run_id: str) -> None:
         run.status = RunStatus.RUNNING.value
         db.commit()
 
-        findings = run_agent(run_id=run_id, mock=run.mock_mode, region=run.region)
-        total_cents = _persist_findings(db, run_id, findings)
+        findings = run_agent(
+            run_id=run_id,
+            provider=run.provider,
+            mock=run.mock_mode,
+            region=run.region,
+        )
+        total_cents = _persist_findings(db, run_id, findings, provider=run.provider)
 
         run.status = RunStatus.COMPLETED.value
         run.completed_at = datetime.now(timezone.utc)
@@ -89,10 +104,10 @@ def execute_run(run_id: str) -> None:
         db.close()
 
 
-def run_analysis_sync(*, mock: bool, region: str) -> str:
+def run_analysis_sync(*, provider: str, mock: bool, region: str) -> str:
     db = SessionLocal()
     try:
-        run = create_run(db, mock=mock, region=region)
+        run = create_run(db, provider=provider, mock=mock, region=region)
         run_id = run.id
     finally:
         db.close()
