@@ -5,7 +5,7 @@ import tempfile
 
 _TMP_DB = os.path.join(tempfile.gettempdir(), "cost_optimizer_test.db")
 os.environ["DATABASE_URL"] = f"sqlite:///{_TMP_DB}"
-os.environ["MOCK_AWS"] = "true"
+os.environ["MOCK_CLOUD"] = "true"
 os.environ["ANTHROPIC_API_KEY"] = ""  # force heuristic validator
 
 import pytest  # noqa: E402

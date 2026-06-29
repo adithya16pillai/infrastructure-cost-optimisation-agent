@@ -9,8 +9,9 @@ from app.agent import validator
 
 def _finding() -> dict:
     return {
-        "finding_type": "idle_ec2",
-        "resource_type": "ec2",
+        "provider": "aws",
+        "finding_type": "idle_compute",
+        "resource_type": "compute",
         "resource_id": "i-0idle001",
         "region": "us-east-1",
         "estimated_monthly_savings_cents": 7008,

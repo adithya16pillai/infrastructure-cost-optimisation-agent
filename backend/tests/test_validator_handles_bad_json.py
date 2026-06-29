@@ -7,12 +7,13 @@ from app.agent import validator
 
 def _finding() -> dict:
     return {
-        "finding_type": "unattached_ebs",
-        "resource_type": "ebs",
+        "provider": "aws",
+        "finding_type": "unattached_disk",
+        "resource_type": "disk",
         "resource_id": "vol-0unatt001",
         "region": "us-east-1",
         "estimated_monthly_savings_cents": 4000,
-        "evidence": {"size_gb": 500, "volume_type": "gp3"},
+        "evidence": {"size_gb": 500, "disk_type": "gp3"},
     }
 
 
